@@ -1,14 +1,17 @@
 package com.example.saymontest.pipeline;
 
+import com.example.saymontest.aspects.annotations.Metric;
 import com.example.saymontest.config.PipelineProperties;
-import com.example.saymontest.model.SourceMessageImpl;
+import com.example.saymontest.model.api.SourceMessage;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Component;
 import org.springframework.expression.Expression;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class Filter {
 
@@ -18,14 +21,26 @@ public class Filter {
     @PostConstruct
     public void compile() {
         if (pipelineProperties.getFilterRule() != null && !pipelineProperties.getFilterRule().isBlank()) {
-            SpelExpressionParser parser = new SpelExpressionParser();
-            compiled = parser.parseExpression(pipelineProperties.getFilterRule());
+            try {
+                SpelExpressionParser parser = new SpelExpressionParser();
+                compiled = parser.parseExpression(pipelineProperties.getFilterRule());
+            } catch (Exception e) {
+                throw new IllegalStateException("Parsing filter rules failed: " + e.getMessage());
+            }
         }
     }
 
-    public boolean passes(SourceMessageImpl message) {
-        if (compiled == null)
+    @Metric(name = "filter", tags = {"stage=preprocessing"})
+    public boolean passes(SourceMessage message) {
+        if (compiled == null) {
             return true;
-        return Boolean.TRUE.equals(compiled.getValue(message, Boolean.class));
+        }
+        try {
+            Boolean result = compiled.getValue(message, Boolean.class);
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            log.warn("Filter evaluation error for message {}: {}", message, e.getMessage());
+            return false;
+        }
     }
 }

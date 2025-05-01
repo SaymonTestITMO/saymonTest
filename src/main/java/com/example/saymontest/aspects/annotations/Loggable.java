@@ -1,4 +1,9 @@
 package com.example.saymontest.aspects.annotations;
 
-public class Loggable {
+import java.lang.annotation.*;
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Loggable {
 }

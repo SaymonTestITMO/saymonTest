@@ -13,9 +13,12 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "pipeline")
 public class PipelineProperties {
+
     private List<String> deduplicationKeys;
     private int duplicationWindowSeconds;
     private String filterRule;
     private List<String> groupByKeys;
     private int windowSizeSeconds;
+    private int threadPoolSize = Runtime.getRuntime().availableProcessors();
+
 }

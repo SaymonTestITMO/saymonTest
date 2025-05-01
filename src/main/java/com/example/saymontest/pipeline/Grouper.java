@@ -1,7 +1,8 @@
 package com.example.saymontest.pipeline;
 
+import com.example.saymontest.aspects.annotations.Metric;
 import com.example.saymontest.config.PipelineProperties;
-import com.example.saymontest.model.SourceMessageImpl;
+import com.example.saymontest.model.api.SourceMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +16,9 @@ public class Grouper {
 
     private final PipelineProperties pipelineProperties;
 
-    public String groupKey(SourceMessageImpl message) {
-        Map<String, String> labels = message.getLabels();
+    @Metric(name = "grouping", tags = {"stage=processing"})
+    public String groupKey(SourceMessage message) {
+        Map<String, String> labels = message.labels();
         List<String> groupKeys = pipelineProperties.getGroupByKeys();
 
         return groupKeys.stream()

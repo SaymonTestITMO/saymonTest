@@ -1,8 +1,7 @@
 package com.example.saymontest.service.interfaces;
 
-import com.example.saymontest.model.SourceMessageImpl;
-import org.springframework.stereotype.Component;
+import com.example.saymontest.model.api.SourceMessage;
 
 public interface Source {
-    Iterable<SourceMessageImpl> source();
+    Iterable<SourceMessage> source();
 }

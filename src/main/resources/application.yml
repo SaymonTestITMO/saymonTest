@@ -1,0 +1,47 @@
+spring:
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      retry:
+        attempts: 3
+        backoffMs: 2000
+    producer:
+      retries: 3
+
+server:
+  port: 8080
+
+pipeline:
+  deduplication-keys: [A, B]
+  deduplication-window-seconds: 300
+  filter-rule: "value > 10"
+  group-by-keys: [A, B]
+  window-size-seconds: 60
+
+kafka:
+  bootstrap-servers: localhost:9092
+  source-topic: SOURCE
+  sink-topic: SINK
+  consumer-retry:
+    attempts: 3
+    backoff-ms: 2000
+
+resilience4j:
+  retry:
+    instances:
+      kafkaSender:
+        max-attempts: 3
+        wait-duration: 500ms
+  timeout:
+    instances:
+      kafkaSender:
+        timeout-duration: 2s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    enable:
+      all: true

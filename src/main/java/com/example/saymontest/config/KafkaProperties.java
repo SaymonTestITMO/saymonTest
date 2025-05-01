@@ -12,8 +12,16 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kafka")
 public class KafkaProperties {
 
-    private String bootStrapService;
+    private String bootstrapServers;
     private String sourceTopic;
     private String sinkTopic;
 
+    private RetryProperties consumerRetry = new RetryProperties();
+
+    @Getter
+    @Setter
+    public static class RetryProperties {
+        private int attempts;
+        private long backoffMs;
+    }
 }

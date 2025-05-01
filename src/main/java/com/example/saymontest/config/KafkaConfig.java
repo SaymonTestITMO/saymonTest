@@ -1,5 +1,6 @@
 package com.example.saymontest.config;
 
+import com.example.saymontest.model.ErrorMessage;
 import com.example.saymontest.model.SinkMessageImpl;
 import com.example.saymontest.model.SourceMessageImpl;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +14,10 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +33,7 @@ public class KafkaConfig {
     public ConsumerFactory<String, SourceMessageImpl> consumerFactory() {
 
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootStrapService());
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "pipeline-group");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -46,12 +49,16 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, SourceMessageImpl> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        int attempts = properties.getConsumerRetry().getAttempts();
+        long backoffMs = properties.getConsumerRetry().getBackoffMs();
+        factory.setCommonErrorHandler(new DefaultErrorHandler(new FixedBackOff(backoffMs, attempts)));
+
         return factory;
     }
 
     public ProducerFactory<String, SinkMessageImpl> producerFactory() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootStrapService());
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootstrapServers());
         props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -62,6 +69,18 @@ public class KafkaConfig {
     @Bean
     public KafkaTemplate<String, SinkMessageImpl> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    @Bean
+    public ProducerFactory<String, ErrorMessage> errorProducerFactory() {
+        Map<String, Object> config = new HashMap<>();
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(config);
+    }
+
+    @Bean
+    public KafkaTemplate<String, ErrorMessage> errorKafkaTemplate() {
+        return new KafkaTemplate<>(errorProducerFactory());
     }
 
 }

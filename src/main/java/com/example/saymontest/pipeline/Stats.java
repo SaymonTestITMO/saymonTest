@@ -1,6 +1,9 @@
 package com.example.saymontest.pipeline;
 
+import com.example.saymontest.aspects.annotations.Metric;
 import com.example.saymontest.model.SinkMessageImpl;
+import com.example.saymontest.model.api.SinkMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,8 +11,8 @@ public class Stats {
 
     private long from;
     private long to;
-    private double max = Double.MAX_VALUE;
-    private double min = Double.MIN_VALUE;
+    private double max = Double.NEGATIVE_INFINITY;
+    private double min = Double.POSITIVE_INFINITY;
     private double sum = 0;
     private int count = 0;
 
@@ -18,6 +21,7 @@ public class Stats {
         this.to = timeStamp;
     }
 
+    @Metric(name = "stats.update", tags = {"stage=aggregation"})
     public void update(double value, long timeStamp) {
         if (timeStamp < from)
             from = timeStamp;
@@ -29,7 +33,7 @@ public class Stats {
         count++;
     }
 
-    public SinkMessageImpl toSinkMessage(String groupKey, long now) {
+    public SinkMessage toSinkMessage(String groupKey, long now) {
         return new SinkMessageImpl(
                 from,
                 to,
